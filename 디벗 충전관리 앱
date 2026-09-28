@@ -1,0 +1,159 @@
+import React, { useState } from 'react';
+import { Battery, AlertCircle, CheckCircle2, ShieldAlert, RefreshCw, Bell, Radio } from 'lucide-react';
+
+export default function BoBoJoJoMain() {
+  // 내 배터리 상태 (개인 등록 배터리)
+  const [myBattery, setMyBattery] = useState({
+    name: "민트 보조배터리",
+    charge: 35, // 잔여량 (%)
+    isNearby: true, // 블루투스/비콘 연동 소지 여부
+  });
+
+  // 학교 공용 배터리 현황
+  const [sharedSummary] = useState({
+    available: 6,
+    rented: 8,
+    broken: 2,
+  });
+
+  // 알림 팝업 상태
+  const [showChecklist, setShowChecklist] = useState(true);
+
+  // 배터리 잔여량에 따른 색상 및 문구 계산
+  const getBatteryStatusInfo = (level) => {
+    if (level <= 20) {
+      return { color: 'bg-red-500', text: '경고! 충전이 시급해요 😱', textColor: 'text-red-500', bgLight: 'bg-red-50' };
+    } else if (level <= 50) {
+      return { color: 'bg-amber-400', text: '주의! 보충해 두면 좋아요 ⚠️', textColor: 'text-amber-500', bgLight: 'bg-amber-50' };
+    } else {
+      return { color: 'bg-emerald-400', text: '안전! 오늘 하루 걱정 없어요 🔋', textColor: 'text-emerald-500', bgLight: 'bg-emerald-50' };
+    }
+  };
+
+  const statusInfo = getBatteryStatusInfo(myBattery.charge);
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 max-w-md mx-auto font-sans pb-12">
+      {/* 헤더 */}
+      <header className="flex justify-between items-center my-4">
+        <div>
+          <h1 className="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-1.5">
+            ⚡ {보보조조}
+          </h1>
+          <p className="text-xs text-slate-500">디벗 배터리 걱정 제로 라이프</p>
+        </div>
+        <button className="p-2 bg-white rounded-full shadow-sm text-slate-600 border border-slate-100 relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+      </header>
+
+      {/* ④ 등교 시 보조배터리 소지 확인 알림 팝업 */}
+      {showChecklist && (
+        <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm relative animate-fade-in">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+              <Radio className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-emerald-900">등교 필수 체크! 🎒</h3>
+              <p className="text-xs text-emerald-700 mt-0.5">
+                {myBattery.isNearby 
+                  ? "가방 안 보조배터리가 감지되었어요!" 
+                  : "등록된 보조배터리가 근처에 없어요. 챙기셨나요?"}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowChecklist(false)} 
+            className="absolute top-2 right-3 text-emerald-400 hover:text-emerald-600 text-sm font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ② 개인 보조배터리 등록 및 충전량 게이지 */}
+      <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-5">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">
+            내 배터리
+          </span>
+          <span className={`text-xs font-bold ${myBattery.isNearby ? 'text-emerald-600' : 'text-slate-400'} flex items-center gap-1`}>
+            <span className={`w-2 h-2 rounded-full ${myBattery.isNearby ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+            {myBattery.isNearby ? '소지 중' : '미감지'}
+          </span>
+        </div>
+
+        <h2 className="text-lg font-bold text-slate-800 mb-1">{myBattery.name}</h2>
+        <p className={`text-xs font-semibold mb-4 ${statusInfo.textColor}`}>
+          {statusInfo.text}
+        </p>
+
+        {/* 게이지 바 */}
+        <div className="relative w-full bg-slate-100 h-6 rounded-full overflow-hidden p-1 mb-2">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ease-out ${statusInfo.color}`}
+            style={{ width: `${myBattery.charge}%` }}
+          ></div>
+        </div>
+        <div className="flex justify-between items-center text-xs text-slate-400 font-medium px-1">
+          <span>0%</span>
+          <span className="text-base font-extrabold text-slate-800">{myBattery.charge}%</span>
+          <span>100%</span>
+        </div>
+      </section>
+
+      {/* ① & ③ 공유 보조배터리 현황 및 고장/수리 상태 요약 */}
+      <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-5">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <Battery className="w-4 h-4 text-emerald-500" />
+            학교 공유 배터리 스테이션
+          </h2>
+          <span className="text-xs text-slate-400 flex items-center gap-1 cursor-pointer hover:text-slate-600">
+            <RefreshCw className="w-3 h-3" /> 새로고침
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {/* 대여 가능 */}
+          <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <span className="block text-xs text-emerald-700 font-medium">사용 가능</span>
+            <span className="text-lg font-black text-emerald-800">{sharedSummary.available}대</span>
+          </div>
+
+          {/* 대여 중 */}
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+            <AlertCircle className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+            <span className="block text-xs text-slate-500 font-medium">대여 중</span>
+            <span className="text-lg font-black text-slate-700">{sharedSummary.rented}대</span>
+          </div>
+
+          {/* 고장/수리 중 */}
+          <div className="p-3 bg-red-50 rounded-2xl border border-red-100">
+            <ShieldAlert className="w-5 h-5 text-red-400 mx-auto mb-1" />
+            <span className="block text-xs text-red-600 font-medium">고장/수리</span>
+            <span className="text-lg font-black text-red-700">{sharedSummary.broken}대</span>
+          </div>
+        </div>
+
+        <button className="w-full mt-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm shadow-sm transition-all active:scale-[0.98]">
+          보조배터리 바로 대여하기
+        </button>
+      </section>
+
+      {/* 고장 신고 및 상태 업데이트 바로가기 */}
+      <div className="p-4 bg-slate-100 rounded-2xl flex justify-between items-center">
+        <div>
+          <p className="text-xs font-bold text-slate-700">배터리가 제대로 안 움직이나요?</p>
+          <p className="text-[10px] text-slate-400">고장난 배터리를 신속하게 신고해주세요.</p>
+        </div>
+        <button className="px-3 py-1.5 bg-white text-xs font-bold text-red-500 rounded-xl border border-slate-200 shadow-2xs">
+          고장 신고
+        </button>
+      </div>
+    </div>
+  );
+}
