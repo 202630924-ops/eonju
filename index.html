@@ -1,159 +1,743 @@
-import React, { useState } from 'react';
-import { Battery, AlertCircle, CheckCircle2, ShieldAlert, RefreshCw, Bell, Radio } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>보보조조 - 디벗 보조배터리 케어 서비스</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-export default function BoBoJoJoMain() {
-  // 내 배터리 상태 (개인 등록 배터리)
-  const [myBattery, setMyBattery] = useState({
-    name: "민트 보조배터리",
-    charge: 35, // 잔여량 (%)
-    isNearby: true, // 블루투스/비콘 연동 소지 여부
-  });
+  <!-- React & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
-  // 학교 공용 배터리 현황
-  const [sharedSummary] = useState({
-    available: 6,
-    rented: 8,
-    broken: 2,
-  });
+  <!-- Babel Standalone for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  // 알림 팝업 상태
-  const [showChecklist, setShowChecklist] = useState(true);
-
-  // 배터리 잔여량에 따른 색상 및 문구 계산
-  const getBatteryStatusInfo = (level) => {
-    if (level <= 20) {
-      return { color: 'bg-red-500', text: '경고! 충전이 시급해요 😱', textColor: 'text-red-500', bgLight: 'bg-red-50' };
-    } else if (level <= 50) {
-      return { color: 'bg-amber-400', text: '주의! 보충해 두면 좋아요 ⚠️', textColor: 'text-amber-500', bgLight: 'bg-amber-50' };
-    } else {
-      return { color: 'bg-emerald-400', text: '안전! 오늘 하루 걱정 없어요 🔋', textColor: 'text-emerald-500', bgLight: 'bg-emerald-50' };
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
     }
-  };
+    
+    /* Smooth Scrollbar & Animations */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
 
-  const statusInfo = getBatteryStatusInfo(myBattery.charge);
+  <div id="root"></div>
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 max-w-md mx-auto font-sans pb-12">
-      {/* 헤더 */}
-      <header className="flex justify-between items-center my-4">
-        <div>
-          <h1 className="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-1.5">
-            ⚡ {보보조조}
-          </h1>
-          <p className="text-xs text-slate-500">디벗 배터리 걱정 제로 라이프</p>
-        </div>
-        <button className="p-2 bg-white rounded-full shadow-sm text-slate-600 border border-slate-100 relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-      </header>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-      {/* ④ 등교 시 보조배터리 소지 확인 알림 팝업 */}
-      {showChecklist && (
-        <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm relative animate-fade-in">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
-              <Radio className="w-5 h-5 animate-pulse" />
+    const Icons = {
+      Battery: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></svg>
+      ),
+      BatteryCharging: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m11 7-3 5h4l-3 5"/><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></svg>
+      ),
+      AlertCircle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      ),
+      CheckCircle2: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      ),
+      ShieldAlert: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      ),
+      RefreshCw: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      ),
+      Bell: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      ),
+      Radio: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
+      ),
+      Edit3: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      ),
+      Sliders: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+      ),
+      Wrench: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      ),
+      X: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      ),
+      Sparkles: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+      ),
+      Smartphone: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>
+      )
+    };
+
+    function App() {
+      // Personal Registered Battery State
+      const [myBattery, setMyBattery] = useState({
+        id: 'my-bat-01',
+        name: '민트 보조배터리',
+        charge: 35,
+        isNearby: true,
+        capacity: '10,000mAh'
+      });
+
+      // Shared Station Batteries State
+      const [sharedBatteries, setSharedBatteries] = useState([
+        { id: 'S-01', slot: 1, charge: 95, status: 'AVAILABLE' },
+        { id: 'S-02', slot: 2, charge: 88, status: 'AVAILABLE' },
+        { id: 'S-03', slot: 3, charge: 100, status: 'AVAILABLE' },
+        { id: 'S-04', slot: 4, charge: 42, status: 'RENTED', rentedBy: '김철수' },
+        { id: 'S-05', slot: 5, charge: 15, status: 'RENTED', rentedBy: '이영희' },
+        { id: 'S-06', slot: 6, charge: 78, status: 'AVAILABLE' },
+        { id: 'S-07', slot: 7, charge: 0, status: 'BROKEN', reason: 'C타입 단자 접촉불량' },
+        { id: 'S-08', slot: 8, charge: 12, status: 'BROKEN', reason: '충전 속도 저하' },
+        { id: 'S-09', slot: 9, charge: 90, status: 'AVAILABLE' },
+        { id: 'S-10', slot: 10, charge: 85, status: 'AVAILABLE' },
+      ]);
+
+      // Active User Rental State
+      const [activeRental, setActiveRental] = useState(null);
+
+      // Modals & UI Controls
+      const [showChecklist, setShowChecklist] = useState(true);
+      const [showNotifications, setShowNotifications] = useState(false);
+      const [showRentalModal, setShowRentalModal] = useState(false);
+      const [showReportModal, setShowReportModal] = useState(false);
+      const [showEditModal, setShowEditModal] = useState(false);
+      const [showSimModal, setShowSimModal] = useState(false);
+      const [showBrokenListModal, setShowBrokenListModal] = useState(false);
+      const [isRefreshing, setIsRefreshing] = useState(false);
+
+      // Form Inputs
+      const [editNameInput, setEditNameInput] = useState(myBattery.name);
+      const [reportBatteryId, setReportBatteryId] = useState('');
+      const [reportDescription, setReportDescription] = useState('');
+
+      // Notifications List
+      const [notifications, setNotifications] = useState([
+        { id: 1, title: '등교 알림', message: '가방 안에 보조배터리가 소지되어 있습니다.', time: '방금 전', unread: true },
+        { id: 2, title: '디벗 배터리 경고', message: '디벗 배터리가 20% 이하입니다. 보조배터리를 연결하세요.', time: '10분 전', unread: true },
+        { id: 3, title: '스테이션 현황', message: '교실 스테이션에 6개의 대여 가능 배터리가 있습니다.', time: '1시간 전', unread: false },
+      ]);
+
+      // Toasts Feedback
+      const [toast, setToast] = useState(null);
+
+      const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      // Summary counts
+      const availableCount = sharedBatteries.filter(b => b.status === 'AVAILABLE').length;
+      const rentedCount = sharedBatteries.filter(b => b.status === 'RENTED').length;
+      const brokenCount = sharedBatteries.filter(b => b.status === 'BROKEN').length;
+
+      // Battery Status Color Logic
+      const getBatteryStatusInfo = (level) => {
+        if (level <= 20) {
+          return { 
+            color: 'bg-red-500', 
+            text: '경고! 충전이 시급해요 😱', 
+            textColor: 'text-red-500', 
+          };
+        } else if (level <= 50) {
+          return { 
+            color: 'bg-amber-400', 
+            text: '주의! 보충해 두면 좋아요 ⚠️', 
+            textColor: 'text-amber-500', 
+          };
+        } else {
+          return { 
+            color: 'bg-emerald-400', 
+            text: '안전! 오늘 하루 걱정 없어요 🔋', 
+            textColor: 'text-emerald-500', 
+          };
+        }
+      };
+
+      const statusInfo = getBatteryStatusInfo(myBattery.charge);
+
+      // Refresh handler simulation
+      const handleRefresh = () => {
+        setIsRefreshing(true);
+        setTimeout(() => {
+          setIsRefreshing(false);
+          showToast('학교 공유 배터리 정보를 갱신했습니다.');
+        }, 600);
+      };
+
+      // Rent battery handler
+      const handleRent = (battery) => {
+        setSharedBatteries(prev => prev.map(b => 
+          b.id === battery.id ? { ...b, status: 'RENTED', rentedBy: '나 (본인)' } : b
+        ));
+        setActiveRental(battery);
+        setShowRentalModal(false);
+        showToast(`${battery.id}번 배터리를 대여했습니다!`);
+      };
+
+      // Return battery handler
+      const handleReturn = () => {
+        if (!activeRental) return;
+        setSharedBatteries(prev => prev.map(b => 
+          b.id === activeRental.id ? { ...b, status: 'AVAILABLE', rentedBy: undefined } : b
+        ));
+        showToast(`${activeRental.id}번 배터리를 반납했습니다. 수고하셨습니다!`);
+        setActiveRental(null);
+      };
+
+      // Submit fault report handler
+      const handleReportSubmit = (e) => {
+        e.preventDefault();
+        if (!reportBatteryId) {
+          showToast('신고할 배터리를 선택해주세요.', 'error');
+          return;
+        }
+
+        setSharedBatteries(prev => prev.map(b => 
+          b.id === reportBatteryId ? { ...b, status: 'BROKEN', reason: reportDescription || '고장 신고 접수됨' } : b
+        ));
+
+        setShowReportModal(false);
+        setReportBatteryId('');
+        setReportDescription('');
+        showToast('고장 신고가 정상적으로 접수되었습니다.', 'success');
+      };
+
+      // Save edit battery name
+      const handleSaveEdit = (e) => {
+        e.preventDefault();
+        if (!editNameInput.trim()) return;
+        setMyBattery(prev => ({ ...prev, name: editNameInput }));
+        setShowEditModal(false);
+        showToast('보조배터리 정보가 수정되었습니다.');
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex justify-center items-start p-0 sm:p-4">
+          
+          {/* Toast Notification */}
+          {toast && (
+            <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2.5 rounded-full shadow-lg text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${
+              toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-slate-900 text-white'
+            }`}>
+              <Icons.Sparkles className="w-4 h-4 text-emerald-400" />
+              {toast.message}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-emerald-900">등교 필수 체크! 🎒</h3>
-              <p className="text-xs text-emerald-700 mt-0.5">
-                {myBattery.isNearby 
-                  ? "가방 안 보조배터리가 감지되었어요!" 
-                  : "등록된 보조배터리가 근처에 없어요. 챙기셨나요?"}
-              </p>
+          )}
+
+          {/* Main Mobile Frame Container */}
+          <div className="w-full max-w-md bg-slate-50 min-h-screen sm:min-h-[840px] sm:rounded-[36px] sm:shadow-2xl sm:border-[8px] sm:border-white relative overflow-hidden flex flex-col pb-10">
+
+            {/* App Header */}
+            <header className="px-5 pt-6 pb-3 bg-white border-b border-slate-100 sticky top-0 z-20 flex justify-between items-center">
+              <div>
+                <h1 className="text-xl font-black text-emerald-600 tracking-tight flex items-center gap-1.5">
+                  ⚡ {"{보보조조}"}
+                </h1>
+                <p className="text-[11px] font-medium text-slate-400">디벗 배터리 걱정 없는 스마트 학교 생활</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowSimModal(true)}
+                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl transition-colors"
+                  title="테스트 시뮬레이터"
+                >
+                  <Icons.Sliders className="w-4 h-4" />
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+                  }}
+                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl relative transition-colors"
+                >
+                  <Icons.Bell className="w-4 h-4" />
+                  {notifications.some(n => n.unread) && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                  )}
+                  {notifications.some(n => n.unread) && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </div>
+            </header>
+
+            {/* Notification Drawer */}
+            {showNotifications && (
+              <div className="bg-white border-b border-slate-200 px-5 py-3 shadow-md z-10 animate-fade-in">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-slate-700">알림 목록</span>
+                  <button onClick={() => setShowNotifications(false)} className="text-xs text-slate-400 hover:text-slate-600">닫기</button>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {notifications.map(n => (
+                    <div key={n.id} className="p-2.5 bg-slate-50 rounded-xl text-xs border border-slate-100">
+                      <div className="flex justify-between font-bold text-slate-800 mb-0.5">
+                        <span>{n.title}</span>
+                        <span className="text-[10px] font-normal text-slate-400">{n.time}</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">{n.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Scrollable Content Body */}
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+
+              {/* ④ Attendance Carrying Check Banner */}
+              {showChecklist && (
+                <div className={`p-4 rounded-2xl border shadow-xs relative transition-all duration-300 ${
+                  myBattery.isNearby ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-xl ${
+                      myBattery.isNearby ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                    }`}>
+                      <Icons.Radio className="w-5 h-5 animate-pulse" />
+                    </div>
+                    <div className="pr-6">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className={`text-xs font-bold ${
+                          myBattery.isNearby ? 'text-emerald-900' : 'text-red-900'
+                        }`}>
+                          등교 필수 체크! 🎒
+                        </h3>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          myBattery.isNearby ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
+                        }`}>
+                          {myBattery.isNearby ? '소지 완료' : '미지참 경고'}
+                        </span>
+                      </div>
+                      <p className={`text-xs mt-1 ${
+                        myBattery.isNearby ? 'text-emerald-700' : 'text-red-700'
+                      }`}>
+                        {myBattery.isNearby 
+                          ? '가방 안 보조배터리가 블루투스로 감지되었습니다. 준비 완료!' 
+                          : '등록된 보조배터리가 근처에서 감지되지 않습니다! 챙겼는지 확인해보세요.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowChecklist(false)} 
+                    className="absolute top-2 right-3 text-slate-400 hover:text-slate-600 text-xs p-1"
+                  >
+                    <Icons.X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Active Rental Banner */}
+              {activeRental && (
+                <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl shadow-sm flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold bg-white/20 px-2 py-0.5 rounded-full">
+                      대여 중인 보조배터리
+                    </span>
+                    <p className="text-base font-black mt-1">슬롯 #{activeRental.slot} ({activeRental.id})</p>
+                    <p className="text-xs text-emerald-100">현재 잔여량: {activeRental.charge}%</p>
+                  </div>
+                  <button 
+                    onClick={handleReturn}
+                    className="px-3.5 py-2 bg-white text-emerald-700 rounded-xl text-xs font-bold shadow-xs hover:bg-emerald-50 transition-colors"
+                  >
+                    반납하기
+                  </button>
+                </div>
+              )}
+
+              {/* ② Personal Registered Battery Card */}
+              <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-extrabold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1">
+                    <Icons.Smartphone className="w-3 h-3" /> 내 보조배터리
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => { setEditNameInput(myBattery.name); setShowEditModal(true); }}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                      title="이름 수정"
+                    >
+                      <Icons.Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setMyBattery(prev => ({ ...prev, isNearby: !prev.isNearby }))}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
+                        myBattery.isNearby 
+                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${myBattery.isNearby ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {myBattery.isNearby ? '소지 중' : '미감지'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-baseline">
+                    <h2 className="text-lg font-black text-slate-800">{myBattery.name}</h2>
+                    <span className="text-xs font-medium text-slate-400">{myBattery.capacity}</span>
+                  </div>
+                  <p className={`text-xs font-bold mt-0.5 ${statusInfo.textColor}`}>
+                    {statusInfo.text}
+                  </p>
+                </div>
+
+                {/* Battery Level Gauge Bar */}
+                <div className="space-y-1.5">
+                  <div className="relative w-full bg-slate-100 h-7 rounded-2xl overflow-hidden p-1 shadow-inner border border-slate-100 flex items-center">
+                    <div 
+                      className={`h-full rounded-xl transition-all duration-500 ease-out flex items-center justify-end pr-2 ${statusInfo.color}`}
+                      style={{ width: `${Math.max(myBattery.charge, 8)}%` }}
+                    >
+                      {myBattery.charge > 15 && (
+                        <span className="text-[10px] font-black text-white/90 drop-shadow-xs">
+                          {myBattery.charge}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs text-slate-400 font-semibold px-1">
+                    <span>0%</span>
+                    <span className="text-sm font-black text-slate-800">{myBattery.charge}%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                {/* Charging / Draining Range Slider */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
+                    <Icons.BatteryCharging className="w-3.5 h-3.5 text-slate-400" /> 시뮬레이션 충전 조절
+                  </span>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={myBattery.charge} 
+                    onChange={(e) => setMyBattery({ ...myBattery, charge: parseInt(e.target.value) })}
+                    className="w-24 accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+              </section>
+
+              {/* ① & ③ Shared Station Section */}
+              <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                      <Icons.Battery className="w-4 h-4 text-emerald-500" />
+                      학교 공유 배터리 스테이션
+                    </h2>
+                    <p className="text-[10px] text-slate-400">3층 디벗 보관함 옆 스테이션</p>
+                  </div>
+                  
+                  <button 
+                    onClick={handleRefresh} 
+                    className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    <Icons.RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Status Summary Grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div 
+                    onClick={() => setShowRentalModal(true)}
+                    className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-100 text-center cursor-pointer hover:bg-emerald-100/80 transition-colors"
+                  >
+                    <Icons.CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                    <span className="block text-[11px] text-emerald-700 font-bold">사용 가능</span>
+                    <span className="text-base font-black text-emerald-800">{availableCount}대</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                    <Icons.AlertCircle className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+                    <span className="block text-[11px] text-slate-500 font-bold">대여 중</span>
+                    <span className="text-base font-black text-slate-700">{rentedCount}대</span>
+                  </div>
+
+                  <div 
+                    onClick={() => setShowBrokenListModal(true)}
+                    className="p-3 bg-red-50/80 rounded-2xl border border-red-100 text-center cursor-pointer hover:bg-red-100/80 transition-colors"
+                  >
+                    <Icons.ShieldAlert className="w-5 h-5 text-red-400 mx-auto mb-1" />
+                    <span className="block text-[11px] text-red-600 font-bold">고장/수리</span>
+                    <span className="text-base font-black text-red-700">{brokenCount}대</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowRentalModal(true)}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Icons.Battery className="w-4 h-4" /> 보조배터리 바로 대여하기
+                </button>
+              </section>
+
+              {/* ⑤ Fault Reporting Card */}
+              <div className="p-4 bg-slate-200/60 rounded-2xl flex justify-between items-center border border-slate-200/50">
+                <div>
+                  <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                    <Icons.Wrench className="w-3.5 h-3.5 text-slate-500" /> 배터리가 고장 났나요?
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">사용 불가 배터리를 신속히 신고해주세요.</p>
+                </div>
+                <button 
+                  onClick={() => setShowReportModal(true)}
+                  className="px-3 py-2 bg-white text-xs font-bold text-red-500 rounded-xl border border-red-100 hover:bg-red-50 transition-colors"
+                >
+                  고장 신고
+                </button>
+              </div>
+
             </div>
-          </div>
-          <button 
-            onClick={() => setShowChecklist(false)} 
-            className="absolute top-2 right-3 text-emerald-400 hover:text-emerald-600 text-sm font-bold"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
-      {/* ② 개인 보조배터리 등록 및 충전량 게이지 */}
-      <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-5">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">
-            내 배터리
-          </span>
-          <span className={`text-xs font-bold ${myBattery.isNearby ? 'text-emerald-600' : 'text-slate-400'} flex items-center gap-1`}>
-            <span className={`w-2 h-2 rounded-full ${myBattery.isNearby ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-            {myBattery.isNearby ? '소지 중' : '미감지'}
-          </span>
-        </div>
-
-        <h2 className="text-lg font-bold text-slate-800 mb-1">{myBattery.name}</h2>
-        <p className={`text-xs font-semibold mb-4 ${statusInfo.textColor}`}>
-          {statusInfo.text}
-        </p>
-
-        {/* 게이지 바 */}
-        <div className="relative w-full bg-slate-100 h-6 rounded-full overflow-hidden p-1 mb-2">
-          <div 
-            className={`h-full rounded-full transition-all duration-500 ease-out ${statusInfo.color}`}
-            style={{ width: `${myBattery.charge}%` }}
-          ></div>
-        </div>
-        <div className="flex justify-between items-center text-xs text-slate-400 font-medium px-1">
-          <span>0%</span>
-          <span className="text-base font-extrabold text-slate-800">{myBattery.charge}%</span>
-          <span>100%</span>
-        </div>
-      </section>
-
-      {/* ① & ③ 공유 보조배터리 현황 및 고장/수리 상태 요약 */}
-      <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-5">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Battery className="w-4 h-4 text-emerald-500" />
-            학교 공유 배터리 스테이션
-          </h2>
-          <span className="text-xs text-slate-400 flex items-center gap-1 cursor-pointer hover:text-slate-600">
-            <RefreshCw className="w-3 h-3" /> 새로고침
-          </span>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {/* 대여 가능 */}
-          <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-            <span className="block text-xs text-emerald-700 font-medium">사용 가능</span>
-            <span className="text-lg font-black text-emerald-800">{sharedSummary.available}대</span>
+            {/* Bottom Footer */}
+            <footer className="px-5 py-3 text-center text-[10px] text-slate-400 border-t border-slate-100 bg-white">
+              학교 디벗 보조배터리 관리 케어 시스템 {"{보보조조}"} v1.2
+            </footer>
           </div>
 
-          {/* 대여 중 */}
-          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-            <AlertCircle className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-            <span className="block text-xs text-slate-500 font-medium">대여 중</span>
-            <span className="text-lg font-black text-slate-700">{sharedSummary.rented}대</span>
-          </div>
+          {}
 
-          {/* 고장/수리 중 */}
-          <div className="p-3 bg-red-50 rounded-2xl border border-red-100">
-            <ShieldAlert className="w-5 h-5 text-red-400 mx-auto mb-1" />
-            <span className="block text-xs text-red-600 font-medium">고장/수리</span>
-            <span className="text-lg font-black text-red-700">{sharedSummary.broken}대</span>
-          </div>
+          {/* 1. Rental Modal */}
+          {showRentalModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+              <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">대여 가능 보조배터리</h3>
+                    <p className="text-xs text-slate-400">원하는 슬롯의 배터리를 선택하세요.</p>
+                  </div>
+                  <button onClick={() => setShowRentalModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                    <Icons.X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {sharedBatteries.filter(b => b.status === 'AVAILABLE').length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      현재 사용 가능한 대여용 배터리가 없습니다.
+                    </div>
+                  ) : (
+                    sharedBatteries.filter(b => b.status === 'AVAILABLE').map(b => (
+                      <div key={b.id} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <span className="text-xs font-black text-slate-800">슬롯 #{b.slot} ({b.id})</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
+                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${b.charge}%` }}></div>
+                            </div>
+                            <span className="text-[11px] font-extrabold text-emerald-600">{b.charge}%</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleRent(b)}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors"
+                        >
+                          대여
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Fault Report Modal */}
+          {showReportModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+              <form onSubmit={handleReportSubmit} className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                    <Icons.ShieldAlert className="w-4 h-4 text-red-500" /> 고장 보조배터리 신고
+                  </h3>
+                  <button type="button" onClick={() => setShowReportModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                    <Icons.X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">대상 배터리 선택</label>
+                    <select 
+                      value={reportBatteryId}
+                      onChange={(e) => setReportBatteryId(e.target.value)}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-emerald-500"
+                    >
+                      <option value="">배터리를 선택해 주세요</option>
+                      {sharedBatteries.map(b => (
+                        <option key={b.id} value={b.id}>
+                          슬롯 #{b.slot} - {b.id} ({b.status === 'BROKEN' ? '이미 고장 접수됨' : `${b.charge}%`})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">고장 증상 요약</label>
+                    <textarea 
+                      rows="3"
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder="예: C타입 선 접촉 불량, 충전 속도 매우 늦음, 외관 파손 등"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-emerald-500"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowReportModal(false)}
+                    className="w-1/2 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="w-1/2 py-2.5 bg-red-500 text-white font-bold text-xs rounded-xl hover:bg-red-600 shadow-sm"
+                  >
+                    신고 접수하기
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* 3. Broken List Modal */}
+          {showBrokenListModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                    <Icons.ShieldAlert className="w-4 h-4 text-red-500" /> 고장/수리 중인 배터리 목록
+                  </h3>
+                  <button onClick={() => setShowBrokenListModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                    <Icons.X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {sharedBatteries.filter(b => b.status === 'BROKEN').length === 0 ? (
+                    <p className="text-center py-6 text-xs text-slate-400">현재 고장 접수된 배터리가 없습니다!</p>
+                  ) : (
+                    sharedBatteries.filter(b => b.status === 'BROKEN').map(b => (
+                      <div key={b.id} className="p-3 bg-red-50/50 border border-red-100 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <span className="text-xs font-black text-red-900">슬롯 #{b.slot} ({b.id})</span>
+                          <p className="text-[11px] text-red-600 mt-0.5">{b.reason || '고장 점검 중'}</p>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-lg">
+                          수리 중
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 4. Edit Personal Battery Name Modal */}
+          {showEditModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <form onSubmit={handleSaveEdit} className="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4">
+                <h3 className="text-base font-bold text-slate-800">보조배터리 이름 수정</h3>
+                <input 
+                  type="text" 
+                  value={editNameInput}
+                  onChange={(e) => setEditNameInput(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-emerald-500"
+                  placeholder="배터리 닉네임 입력"
+                />
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowEditModal(false)}
+                    className="w-1/2 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="w-1/2 py-2 bg-emerald-500 text-white font-bold text-xs rounded-xl"
+                  >
+                    저장
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* 5. Testing Simulator Control Modal */}
+          {showSimModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 text-xs">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="font-bold text-slate-800">앱 시뮬레이터 제어판</h3>
+                  <button onClick={() => setShowSimModal(false)}><Icons.X className="w-4 h-4 text-slate-400" /></button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-bold block mb-1">개인 배터리 소지 상태 토글:</span>
+                    <button 
+                      onClick={() => setMyBattery(prev => ({ ...prev, isNearby: !prev.isNearby }))}
+                      className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
+                    >
+                      현재: {myBattery.isNearby ? '가방 소지 중 (Near)' : '미지참 (Far)'}
+                    </button>
+                  </div>
+
+                  <div>
+                    <span className="font-bold block mb-1">등교 체크 팝업 다시 띄우기:</span>
+                    <button 
+                      onClick={() => setShowChecklist(true)}
+                      className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold"
+                    >
+                      체크 알림 팝업 복원
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
+      );
+    }
 
-        <button className="w-full mt-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm shadow-sm transition-all active:scale-[0.98]">
-          보조배터리 바로 대여하기
-        </button>
-      </section>
-
-      {/* 고장 신고 및 상태 업데이트 바로가기 */}
-      <div className="p-4 bg-slate-100 rounded-2xl flex justify-between items-center">
-        <div>
-          <p className="text-xs font-bold text-slate-700">배터리가 제대로 안 움직이나요?</p>
-          <p className="text-[10px] text-slate-400">고장난 배터리를 신속하게 신고해주세요.</p>
-        </div>
-        <button className="px-3 py-1.5 bg-white text-xs font-bold text-red-500 rounded-xl border border-slate-200 shadow-2xs">
-          고장 신고
-        </button>
-      </div>
-    </div>
-  );
-}
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
